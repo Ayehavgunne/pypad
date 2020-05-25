@@ -3,6 +3,7 @@ import json
 from serial import Serial
 from serial.serialutil import SerialException
 from serial.tools.list_ports import comports
+from serial.tools.list_ports_common import ListPortInfo
 import sys
 import time
 import psutil
@@ -34,12 +35,16 @@ def find_app() -> Optional[str]:
             return exe_name
 
 
+def find_device() -> ListPortInfo:
+    for port in comports():
+        if MY_DEVICE_ID in port.hwid:
+            return port
+
+
 def find_port() -> Optional[Serial]:
     try:
-        for port in comports():
-            if MY_DEVICE_ID in port.hwid:
-                break
-        else:  # no break
+        port = find_device()
+        if not port:
             return None
         serial = Serial(port.device, 115200, timeout=1)
         print("Connected")
@@ -60,18 +65,17 @@ def read_serial(serial: Serial) -> Optional[Set[str]]:
 
 
 def main():
-    previous_buttons = set()
-
+    serial = find_port()
     while True:
-        try:
-            serial = find_port()
-            if serial:
+        if find_device():
+            current_app = find_app()
+            if current_app:
+                print(f"Found app {current_app}")
                 start = get_time()
-                current_app = find_app()
-                if current_app:
-                    print(f"Found app {current_app}")
+                keymap = mappings[current_app]
+                previous_buttons = set()
+
                 while serial.is_open and current_app:
-                    keymap = mappings[current_app]
                     buttons = read_serial(serial)
                     if buttons is None:
                         break
@@ -82,20 +86,26 @@ def main():
                     for button in buttons - previous_buttons:
                         if button in keymap:
                             press_key(keymap[button].upper())
+
                     previous_buttons = buttons
 
                     now = get_time()
                     if now > start + CHECK_APP_SECONDS:
                         start = now
                         current_app = find_app()
-                if not serial.is_open:
-                    print("Disconnected")
             else:
                 time.sleep(5)
-        except KeyboardInterrupt:
-            print("Shutting down")
-            sys.exit(0)
+
+            if not find_device():
+                print("Disconnected")
+        else:
+            time.sleep(5)
+            serial = find_port()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Shutting down")
+        sys.exit(0)
