@@ -1,2 +1,4 @@
 .env/*
 .vscode/*
+*.pyc
+test.py

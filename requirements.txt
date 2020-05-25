@@ -2,3 +2,4 @@ black
 isort
 pyserial
 keyboard
+pywin32
