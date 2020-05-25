@@ -1,5 +1,5 @@
 from directx_keys import press_key, release_key
-import json
+import json5
 from serial import Serial
 from serial.serialutil import SerialException
 from serial.tools.list_ports import comports
@@ -14,7 +14,7 @@ MY_DEVICE_ID = "VID:PID=F055:9800"
 
 print("Starting up")
 
-mappings = json.load(open("mappings.json"))
+mappings = json5.load(open("mappings.json5"))
 current_app = None
 
 
@@ -75,7 +75,7 @@ def main():
                 keymap = mappings[current_app]
                 previous_buttons = set()
 
-                while serial.is_open and current_app:
+                while current_app:
                     buttons = read_serial(serial)
                     if buttons is None:
                         break
