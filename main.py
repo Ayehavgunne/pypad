@@ -1,24 +1,21 @@
-from directx_keys import press_key, release_key
+import sys
+import time
+from typing import Optional, Set
+
 import json5
+import psutil
 from serial import Serial
 from serial.serialutil import SerialException
 from serial.tools.list_ports import comports
 from serial.tools.list_ports_common import ListPortInfo
-import sys
-import time
-import psutil
-from typing import Optional, Set
+
+from directx_keys import press_key, release_key
 
 CHECK_APP_SECONDS = 5
 MY_DEVICE_ID = "VID:PID=F055:9800"
 
-print("Starting up")
 
-mappings = json5.load(open("mappings.json5"))
-current_app = None
-
-
-def find_exe(process_name: str) -> str:
+def is_running(process_name: str) -> str:
     for proc in psutil.process_iter():
         try:
             proc_file_name = proc.exe().replace("\\", "/").split("/")[-1].lower()
@@ -29,9 +26,9 @@ def find_exe(process_name: str) -> str:
     return False
 
 
-def find_app() -> Optional[str]:
+def find_app(mappings: dict) -> Optional[str]:
     for exe_name in mappings.keys():
-        if find_exe(exe_name):
+        if is_running(exe_name):
             return exe_name
 
 
@@ -57,18 +54,19 @@ def get_time() -> float:
     return time.time()
 
 
-def read_serial(serial: Serial) -> Optional[Set[str]]:
+def get_buttons(serial: Serial) -> Optional[Set[str]]:
     try:
         return set(serial.readline().decode("utf-8").strip().split(","))
     except SerialException:
         return None
 
 
-def main():
+def main() -> None:
+    mappings = json5.load(open("mappings.json5"))
     serial = find_port()
     while True:
         if find_device():
-            current_app = find_app()
+            current_app = find_app(mappings)
             if current_app:
                 print(f"Found app {current_app}")
                 start = get_time()
@@ -76,23 +74,23 @@ def main():
                 previous_buttons = set()
 
                 while current_app:
-                    buttons = read_serial(serial)
+                    buttons = get_buttons(serial)
                     if buttons is None:
                         break
 
                     for button in previous_buttons - buttons:
                         if button in keymap:
-                            release_key(keymap[button].upper())
+                            release_key(keymap[button].upper().split('+'))
                     for button in buttons - previous_buttons:
                         if button in keymap:
-                            press_key(keymap[button].upper())
+                            press_key((keymap[button].upper().split('+')))
 
                     previous_buttons = buttons
 
                     now = get_time()
                     if now > start + CHECK_APP_SECONDS:
                         start = now
-                        current_app = find_app()
+                        current_app = find_app(mappings)
             else:
                 time.sleep(5)
 
@@ -104,6 +102,7 @@ def main():
 
 
 if __name__ == "__main__":
+    print("Starting up")
     try:
         main()
     except KeyboardInterrupt:

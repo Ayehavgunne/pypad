@@ -1,5 +1,5 @@
 black
 isort
 pyserial
-keyboard
-pywin32
+json5
+psutil
