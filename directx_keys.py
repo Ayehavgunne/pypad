@@ -1,3 +1,5 @@
+# http://stackoverflow.com/questions/14489013/simulate-python-keypresses-for-controlling-a-game
+
 import ctypes
 import time
 from typing import List, Union
@@ -53,11 +55,12 @@ def press_key(hex_key_codes: List[Union[int, str]]) -> None:
 
     for hex_key_code in hex_key_codes:
         if isinstance(hex_key_code, str):
-            hex_key_code: int = getattr(directx_key_scancodes, hex_key_code)
+            hex_key_code: int = getattr(directx_key_scancodes, str(hex_key_code), None)
 
-        ii_.ki = KeyBdInput(0, hex_key_code, 0x0008, 0, ctypes.pointer(extra))
-        x = Input(ctypes.c_ulong(1), ii_)
-        ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+        if hex_key_code is not None:
+            ii_.ki = KeyBdInput(0, hex_key_code, 0x0008, 0, ctypes.pointer(extra))
+            x = Input(ctypes.c_ulong(1), ii_)
+            ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
 
 
 def release_key(hex_key_codes: List[Union[int, str]]) -> None:
@@ -66,8 +69,11 @@ def release_key(hex_key_codes: List[Union[int, str]]) -> None:
 
     for hex_key_code in hex_key_codes:
         if isinstance(hex_key_code, str):
-            hex_key_code: int = getattr(directx_key_scancodes, hex_key_code)
+            hex_key_code: int = getattr(directx_key_scancodes, str(hex_key_code), None)
 
-        ii_.ki = KeyBdInput(0, hex_key_code, 0x0008 | 0x0002, 0, ctypes.pointer(extra))
-        x = Input(ctypes.c_ulong(1), ii_)
-        ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+        if hex_key_code is not None:
+            ii_.ki = KeyBdInput(
+                0, hex_key_code, 0x0008 | 0x0002, 0, ctypes.pointer(extra)
+            )
+            x = Input(ctypes.c_ulong(1), ii_)
+            ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))

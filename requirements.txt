@@ -1,5 +1,5 @@
 black
 isort
 pyserial
-json5
 psutil
+pyyaml

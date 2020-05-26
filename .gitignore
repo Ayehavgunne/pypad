@@ -1,4 +1,9 @@
-.env/*
-.vscode/*
+.env/
+.vscode/
+.idea/
 *.pyc
 test.py
+build/
+dist/
+*.spec
+__pycache__/
