@@ -1,6 +1,6 @@
 import sys
 import time
-from typing import Optional, Set, Tuple
+from typing import Any, Optional, Set, Tuple
 
 import psutil
 import yaml
@@ -9,15 +9,15 @@ from serial.serialutil import SerialException
 from serial.tools.list_ports import comports
 from serial.tools.list_ports_common import ListPortInfo
 
-from directx_keys import press_key, release_key
-
 CHECK_APP_SECONDS = 5
 BAUD_RATE = 115200
-MY_DEVICE_ID = "VID:PID=F055:9800"
+MY_DEVICE_ID = "VID:PID=F055:9801"
 DEBUG_MODE = True
 
 
 def is_running(process: psutil.Process) -> bool:
+    if not process:
+        return False
     try:
         return process.status() == psutil.STATUS_RUNNING
     except psutil.NoSuchProcess:
@@ -50,8 +50,8 @@ def find_serial() -> Optional[Serial]:
         port = find_device()
         if not port:
             return None
-        serial = Serial(port.device, BAUD_RATE, timeout=1)
-        print("Connected")
+        serial = Serial(port.device, BAUD_RATE, timeout=1, write_timeout=0.005)
+        print("Connected                    ")
         return serial
     except SerialException:
         return None
@@ -63,21 +63,43 @@ def get_time() -> float:
 
 def read_serial(serial: Serial) -> Optional[str]:
     try:
-        return serial.readline().decode("utf-8").strip()
+        serial.reset_input_buffer()
+        result = serial.readline()
     except SerialException:
         return None
+    try:
+        result = result.decode("utf-8").strip()
+        if result:
+            if result.startswith('report: ') or result.startswith('syntax'):
+                print(result)
+            return result
+    except UnicodeDecodeError:
+        return None
+
+
+def send_serial(serial: Serial, message: Any) -> None:
+    try:
+        serial.reset_output_buffer()
+        serial.write(f"{str(message)}\n".encode("utf-8"))
+    except SerialException as err:
+        print(err)
 
 
 def get_joystick_pos(message: str) -> Optional[Tuple[float, float]]:
     x = 0
     y = 0
-    message = message.split("|")
-    cords = message[1].split(",")
+    cords = message.split(",")
     for cord in cords:
         if "x" in cord:
-            x = float(cord.split(":")[1])
+            try:
+                x = float(cord.split(":")[1])
+            except (ValueError, IndexError):
+                pass
         if "y" in cord:
-            y = float(cord.split(":")[1])
+            try:
+                y = float(cord.split(":")[1])
+            except (ValueError, IndexError):
+                pass
     return x, y
 
 
@@ -88,52 +110,43 @@ def get_buttons(message: str) -> Optional[Set[str]]:
 def main() -> None:
     mappings = yaml.load(open("mappings.yaml"), Loader=yaml.FullLoader)
     serial = find_serial()
+    running = False
+    last_check = running
+    current_app = find_app(mappings)
+    start = get_time()
+
     while True:
-        if find_device():
-            current_app = find_app(mappings)
-            if current_app:
-                current_app_name = get_proc_exe_name(current_app)
-                print(f"Found app {current_app_name}")
-                serial.reset_input_buffer()
-                running = True
-                keymap = mappings[current_app_name]
-                previous_buttons = set()
-                start = get_time()
-
-                while running:
-                    message = read_serial(serial)
-                    buttons = get_buttons(message)
-                    x, y = get_joystick_pos(message)
-                    if buttons is None:
-                        break
-                    elif DEBUG_MODE:
-                        print(
-                            f"{', '.join(str(button) for button in buttons)} X:{x} Y:{y}                                                             ",
-                            end="\r",
-                        )
-
-                    for button in previous_buttons - buttons:
-                        if button in keymap:
-                            release_key(keymap[button].upper().split("+"))
-                    for button in buttons - previous_buttons:
-                        if button in keymap:
-                            press_key(keymap[button].upper().split("+"))
-
-                    previous_buttons = buttons
-
-                    now = get_time()
-                    if now > start + CHECK_APP_SECONDS:
-                        start = now
-                        running = is_running(current_app)
-                print(f"{current_app_name} stopped running")
-            else:
-                time.sleep(5)
-
-            if not find_device():
-                print("Disconnected")
-        else:
+        if not find_device():
             time.sleep(5)
             serial = find_serial()
+            continue
+
+        if not running:
+            time.sleep(5)
+            current_app = find_app(mappings)
+            running = is_running(current_app)
+            continue
+
+        message = read_serial(serial)
+        if message:
+            x, y = get_joystick_pos(message)
+            if DEBUG_MODE:
+                print(
+                    f"X:{x:.4f}\tY:{y:.4f}", end="\r",
+                )
+
+        if last_check != running and running:
+            current_app_name = get_proc_exe_name(current_app)
+            print(f"Found app {current_app_name}            ")
+            keymap = mappings[current_app_name]
+            send_serial(serial, keymap)
+            last_check = running
+
+        now = get_time()
+        if now > start + CHECK_APP_SECONDS:
+            start = now
+            last_check = running
+            running = is_running(current_app)
 
 
 if __name__ == "__main__":
@@ -141,5 +154,5 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Shutting down")
+        print("Shutting down            ")
         sys.exit(0)
