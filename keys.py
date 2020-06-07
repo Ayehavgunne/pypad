@@ -71,6 +71,7 @@ NUM0 = 0x27  # Keyboard 0 and )
 
 ENTER = 0x28  # Keyboard Return (ENTER)
 ESC = 0x29  # Keyboard ESCAPE
+ESCAPE = ESC
 BACKSPACE = 0x2A  # Keyboard Backspace
 TAB = 0x2B  # Keyboard Tab
 SPACE = 0x2C  # Keyboard Spacebar
