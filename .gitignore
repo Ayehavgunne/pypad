@@ -8,3 +8,4 @@ dist/
 *.spec
 __pycache__/
 *.code-workspace
+/.my_device_id

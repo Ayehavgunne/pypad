@@ -1,5 +1,7 @@
 black
+python-dotenv
 isort
 pyserial
 psutil
 pyyaml
+tonberry

@@ -1,176 +1,158 @@
 MCC-Win64-Shipping:  # Halo: The Master Chief Collection
-    # 1: c
-    2: a
-    3: s
-    # 4: two
-    # 5: one
-    # 6: p
-    # 7: o
-    8: escape
-    # 9: u
-    # 10: y
-    # 11: t
-    # 12: r
-    # 13: e
-    # 14: q
-    # 15: f
-    # 16: g
-    # 17: z
-    # 18: x
-    19: w
-    # 20: v
-    # 21: b
-    # 22: n
-    # 23: m
-    # 24: 
-    25: d
-    # 26: /
-    # 27: l
-    # 28: k
-    29: d
-    # 30: h
+    1: escape
+    2: 2
+    3: 3
+    4: 4
+    5: 5
+    6: tab
+    7: q
+    8: w
+    9: e
+    10: r
+    11: capslock
+    12: a
+    13: s
+    14: g
+    15: f
+    16: shift
+    17: z
+    18: x
+    19: c
+    20: space
+    21: alt
     joy_up: w
     joy_down: s
     joy_left: a
     joy_right: d
+    joy_button: b
+    scroll_up: scroll_up
+    scroll_down: scroll_down
+    scroll_middle: scroll_middle
+    wasd_mode: true
 
 MassEffectAndromeda:
-    # 1: c
-    2: a
-    3: s
-    # 4: two
-    # 5: one
-    # 6: p
-    # 7: o
-    8: escape
-    # 9: u
-    # 10: y
-    # 11: t
-    # 12: r
-    # 13: e
-    # 14: q
-    # 15: f
-    # 16: g
-    # 17: z
-    # 18: x
-    19: w
-    # 20: v
-    # 21: b
-    # 22: n
-    # 23: m
-    # 24: 
-    25: d
-    # 26: /
-    # 27: l
-    # 28: k
-    29: d
-    # 30: h
+#    1: 1
+#    2: 2
+#    3: 3
+#    4: 4
+#    5: 5
+    6: q
+    7: 1
+    8: 2
+    9: 3
+    10: v
+    11: ctrl
+    12: r
+    13: f
+    14: e
+#    15:
+    16: f1
+    17: f2
+    18: f3
+    19: f4
+    20: m
+    21: escape
     joy_up: w
     joy_down: s
     joy_left: a
     joy_right: d
+    joy_button: b
+    scroll_up: scroll_up
+    scroll_down: scroll_down
+    scroll_middle: delete
+    wasd_mode: false
 
 nwmain:  # Neverwinter Nights
-    1: d
-    2: s
-    3: q
-    4: e
-    # 5: d
-    # 6: d
-    # 7: d
-    8: escape
-    # 9: d
-    # 10: d
-    # 11: d
-    # 12: d
-    # 13: d
-    # 14: d
-    # 15: d
-    # 16: d
-    # 17: d
-    # 18: d
-    # 19: d
-    # 20: d
-    # 21: d
-    # 22: d
-    # 23: d
-    # 24: d
-    # 25: d
-    # 26: d
-    # 27: d
-    # 28: d
-    # 29: d
-    # 30: d
-    joy_up: w
-    joy_down: s
-    joy_left: a
-    joy_right: d
-
-pso2:  # PSO2
-    # 1: c
-    2: a
-    3: s
-    # 4: two
-    # 5: one
-    # 6: p
-    # 7: o
-    8: escape
-    # 9: u
-    # 10: y
-    # 11: t
-    # 12: r
-    # 13: e
-    # 14: q
-    # 15: f
-    # 16: g
-    # 17: z
-    # 18: x
-    19: w
-    # 20: v
-    21: e
-    # 22: n
-    # 23: m
-    # 24: 
-    25: d
-    # 26: /
-    # 27: l
-    # 28: k
-    29: d
-    # 30: h
-    joy_up: w
-    joy_down: s
-    joy_left: a
-    joy_right: d
-
-pso2launcher:  # PSO2 launcher duh
-    1: a
-    2: s
-    3: v
-    4: f
-    5: g
-    6: h
-    7: j
-    8: k
-    # 9: l
-    # 10: q
-    11: w
-    12: e
+    1: 1
+    2: 2
+    3: 3
+    4: 4
+    5: 5
+    6: 6
+    7: 7
+    8: 8
+    9: 9
+    10: 0
+    11: shift
+    12: q
     13: r
-    14: t
-    15: y
-    16: u
-    17: i
-    18: o
-    19: p
-    20: z
-    21: x
-    22: c
-    23: v
-    24: b
-    25: n
-    # 26: m
-    # 27: num1
+    14: e
+    15: f
+    16: ctrl
+    17: z
+    18: x
+    19: c
+    20: space
+    21: alt
     joy_up: w
     joy_down: s
     joy_left: a
     joy_right: d
+    joy_button: b
+    scroll_up: scroll_up
+    scroll_down: scroll_down
+    scroll_middle: scroll_middle
+
+pso2:
+    1: 1
+    2: 2
+    3: 3
+    4: 4
+    5: 5
+    6: 6
+    7: 7
+    8: 8
+    9: 9
+    10: 0
+    11: shift
+    12: q
+    13: r
+    14: e
+    15: f
+    16: ctrl
+    17: z
+    18: x
+    19: c
+    20: space
+    21: escape
+    joy_up: w
+    joy_down: s
+    joy_left: a
+    joy_right: d
+    joy_button: b
+    scroll_up: scroll_up
+    scroll_down: scroll_down
+    scroll_middle: scroll_middle
+    wasd_mode: false
+
+pso2launcher:  # for easy testing
+    1: 1
+    2: 2
+    3: 3
+    4: 4
+    5: 5
+    6: 6
+    7: 7
+    8: 8
+    9: 9
+    10: 0
+    11: n
+    12: q
+    13: r
+    14: e
+    15: f
+    16: v
+    17: z
+    18: x
+    19: c
+    20: j
+    21: m
+    joy_up: w
+    joy_down: s
+    joy_left: a
+    joy_right: d
+    joy_button: b
+    scroll_up: o
+    scroll_down: p
+    scroll_middle: k
+    wasd_mode: true
