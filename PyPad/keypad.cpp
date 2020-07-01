@@ -226,9 +226,9 @@ bool check_mouse_action(String code_key) {
 void loop() {
 	get_key_map();
 	Nkro.reset_keys();
-	rotary_detection();
 
 	if (!key_map.isNull()) {
+		rotary_detection();
 		check_keys();
 		check_other_buttons();
 		check_joystick();

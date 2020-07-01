@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any, Optional
@@ -12,13 +13,14 @@ from serial.serialutil import SerialException
 from serial.tools.list_ports import comports
 from serial.tools.list_ports_common import ListPortInfo
 
-load_dotenv(find_dotenv(filename=".myenv"))
-from config_man.config_man import start_server  # isort:skip
+load_dotenv(find_dotenv(filename="../.myenv"))
+from PyPad.config_man.config_man import start_server  # isort:skip
 
+FILE_DIR = Path(__file__).parent
 
 CHECK_APP_SECONDS = 5
 BAUD_RATE = 115200
-MY_DEVICE_ID = (Path(__file__).parent / ".my_device_id").open().readline().strip()
+MY_DEVICE_ID = os.getenv("DEVICE_ID")
 
 
 def is_running(process: psutil.Process) -> bool:
@@ -92,7 +94,7 @@ async def main() -> None:
     loop = asyncio.get_event_loop()
     loop.create_task(start_server())
 
-    with open("mappings.yaml") as map_file:
+    with (FILE_DIR / "mappings.yaml").open() as map_file:
         mappings = yaml.load(map_file, Loader=yaml.FullLoader)
 
     serial = find_serial()
