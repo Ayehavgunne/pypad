@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <title>PyPad</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                color: white;
+                background-color: #282828;
+            }
+
+            #device_image {
+                /*background-image: url('g13_no_keys.png');*/
+                background-image: url('tartarus.png');
+                background-position: center;
+                height: 550px;
+                width: 400px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        </style>
+        <script>
+            class Key {
+                constructor(name, type, alt) {
+                    this.name = name
+                    this.type = type
+                    this.alt = alt
+                }
+            }
+
+            let keys = [
+                new Key('lctrl', 'mod'),
+                new Key('ctrl', 'mod'),
+                new Key('lshift', 'mod'),
+                new Key('shift', 'mod'),
+                new Key('lalt', 'mod'),
+                new Key('alt', 'mod'),
+                new Key('lmeta', 'mod'),
+                new Key('meta', 'mod'),
+                new Key('rctrl', 'mod'),
+                new Key('rshift', 'mod'),
+                new Key('ralt', 'mod'),
+                new Key('rmeta', 'mod'),
+                new Key('q', 'char'),
+                new Key('w', 'char'),
+                new Key('e', 'char'),
+                new Key('r', 'char'),
+                new Key('t', 'char'),
+                new Key('y', 'char'),
+                new Key('u', 'char'),
+                new Key('i', 'char'),
+                new Key('o', 'char'),
+                new Key('p', 'char'),
+                new Key('a', 'char'),
+                new Key('s', 'char'),
+                new Key('d', 'char'),
+                new Key('f', 'char'),
+                new Key('g', 'char'),
+                new Key('h', 'char'),
+                new Key('j', 'char'),
+                new Key('k', 'char'),
+                new Key('l', 'char'),
+                new Key('z', 'char'),
+                new Key('x', 'char'),
+                new Key('c', 'char'),
+                new Key('v', 'char'),
+                new Key('b', 'char'),
+                new Key('n', 'char'),
+                new Key('m', 'char'),
+                new Key('[', 'char', '{'),
+                new Key(']', 'char', '}'),
+                new Key(';', 'char', ':'),
+                new Key('\'', 'char', '"'),
+                new Key(',', 'char', '<'),
+                new Key('.', 'char', '>'),
+                new Key('/', 'char', '?'),
+                new Key('\\', 'char', '|'),
+                new Key('tab', 'char'),
+                new Key('enter', 'command'),
+                new Key('caps_lock', 'command'),
+                new Key('1', 'num_row', '!'),
+                new Key('2', 'num_row', '@'),
+                new Key('3', 'num_row', '#'),
+                new Key('4', 'num_row', '$'),
+                new Key('5', 'num_row', '%'),
+                new Key('6', 'num_row', '^'),
+                new Key('7', 'num_row', '&'),
+                new Key('8', 'num_row', '*'),
+                new Key('9', 'num_row', '('),
+                new Key('0', 'num_row', ')'),
+                new Key('-', 'num_row', '_'),
+                new Key('=', 'num_row', '+'),
+                new Key('`', 'num_row', '~'),
+                new Key('backspace', 'command'),
+                new Key('escape', 'command'),
+                new Key('F1', 'function'),
+                new Key('F2', 'function'),
+                new Key('F3', 'function'),
+                new Key('F4', 'function'),
+                new Key('F5', 'function'),
+                new Key('F6', 'function'),
+                new Key('F7', 'function'),
+                new Key('F8', 'function'),
+                new Key('F9', 'function'),
+                new Key('F10', 'function'),
+                new Key('F11', 'function'),
+                new Key('F12', 'function'),
+                new Key('insert', 'nav_cluster'), // I hate you insert. WHY ARE YOU STILL A KEY?!
+                new Key('del', 'nav_cluster'),
+                new Key('home', 'nav_cluster'),
+                new Key('end', 'nav_cluster'),
+                new Key('page_up', 'nav_cluster'),
+                new Key('page_down', 'nav_cluster'),
+                new Key('up', 'arrow'),
+                new Key('down', 'arrow'),
+                new Key('left', 'arrow'),
+                new Key('right', 'arrow'),
+                new Key('print_screen', 'command'),
+                new Key('screen_lock', 'command'),
+                new Key('pause', 'command'),
+                new Key('num0', 'num_pad', 'insert'),
+                new Key('num1', 'num_pad', 'end'),
+                new Key('num2', 'num_pad', 'down'),
+                new Key('num3', 'num_pad', 'page_down'),
+                new Key('num4', 'num_pad', 'left'),
+                new Key('num5', 'num_pad'),
+                new Key('num6', 'num_pad', 'right'),
+                new Key('num7', 'num_pad', 'home'),
+                new Key('num8', 'num_pad', 'up'),
+                new Key('num9', 'num_pad', 'page_up'),
+                new Key('num.', 'num_pad', 'delete'),
+                new Key('num_lock', 'command'),
+                new Key('num/', 'num_pad'),
+                new Key('num*', 'num_pad'),
+                new Key('num-', 'num_pad'),
+                new Key('num+', 'num_pad'),
+                new Key('num_enter', 'num_pad'),
+            ]
+
+            class Switch {
+                constructor(index, key, x_pos, y_pos, rotation, show_image) {
+
+                }
+            }
+
+            fetch('/get_mappings').then(response => {
+                if (!response.ok) {
+                    throw new Error(`get_mappings HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            }).then(mappings => {
+                fetch('/get_app').then(response => {
+                    if (!response.ok) {
+                        throw new Error(`get_app HTTP error! status: ${response.status}`);
+                    }
+                    return response.text;
+                }).then(app_name => {
+
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div id="device_image"></div>
+    </body>
+</html>
