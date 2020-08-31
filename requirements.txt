@@ -5,3 +5,4 @@ pyserial
 psutil
 pyyaml
 tonberry
+pywin32

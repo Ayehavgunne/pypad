@@ -7,14 +7,10 @@ from typing import Any, Optional
 
 import psutil
 import yaml
-from dotenv import find_dotenv, load_dotenv
 from serial import Serial
 from serial.serialutil import SerialException
 from serial.tools.list_ports import comports
 from serial.tools.list_ports_common import ListPortInfo
-
-load_dotenv(find_dotenv(filename="../.myenv"))
-from PyPad.config_man.config_man import start_server  # isort:skip
 
 FILE_DIR = Path(__file__).parent
 
@@ -90,10 +86,7 @@ def send_serial(serial: Serial, message: Any) -> None:
         print(err)
 
 
-async def main() -> None:
-    loop = asyncio.get_event_loop()
-    loop.create_task(start_server())
-
+async def monitor() -> None:
     with (FILE_DIR / "mappings.yaml").open() as map_file:
         mappings = yaml.load(map_file, Loader=yaml.FullLoader)
 
@@ -107,6 +100,7 @@ async def main() -> None:
     current_app_name = ""
 
     while True:
+        await asyncio.sleep(0.01)  # to allow other tasks to run
         if warn_disconnected:
             print("Disconnected")
             warn_disconnected = False
@@ -121,41 +115,44 @@ async def main() -> None:
 
         connected = True
 
+        now = get_time()
+        if now > start + CHECK_APP_SECONDS:
+            start = now
+            running = is_running(current_app)
+            with (FILE_DIR / "mappings.yaml").open() as map_file:
+                try:
+                    new_mappings = yaml.load(map_file, Loader=yaml.FullLoader)
+                except Exception as err:
+                    print(err)
+                else:
+                    if new_mappings != mappings:
+                        mappings = new_mappings
+                        last_check = False
+
         if not running:
+            if last_check:
+                send_serial(serial, "\n")
+                print(f"{current_app_name} closed")
             current_app = find_app(mappings)
             running = is_running(current_app)
-            if is_running and current_app:
+            if running:
                 current_app_name = get_proc_exe_name(current_app)
                 print(f"Found app {current_app_name}")
             last_check = False
             continue
 
-        if last_check != running and running:
-            keymap = mappings[current_app_name]
-            keymap = {
-                str(key).upper(): str(value).upper() for key, value in keymap.items()
-            }
-            print("Sending map")
-            send_serial(serial, json.dumps(keymap))
-            last_check = running
-
-        now = get_time()
-        if now > start + CHECK_APP_SECONDS:
-            start = now
-            last_check = running
-            running = is_running(current_app)
-            with open("mappings.yaml") as map_file:
-                new_mappings = yaml.load(map_file, Loader=yaml.FullLoader)
-                if new_mappings != mappings:
-                    mappings = new_mappings
-                    last_check = not running
-            if not running:
-                send_serial(serial, "\n")
-                print(f"{current_app_name} closed")
+        if not last_check and running:
+            try:
+                keymap = mappings[current_app_name]
+            except KeyError:
+                running = False
+            else:
+                keymap = {
+                    str(key).upper(): str(value).upper()
+                    for key, value in keymap.items()
+                }
+                print("Sending map")
+                send_serial(serial, json.dumps(keymap))
+                last_check = True
 
         await asyncio.sleep(5)
-
-
-if __name__ == "__main__":
-    print("Starting up")
-    asyncio.run(main())
