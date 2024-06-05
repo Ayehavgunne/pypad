@@ -156,3 +156,36 @@ pso2launcher:  # for easy testing
     scroll_down: p
     scroll_middle: k
     wasd_mode: true
+
+Wow-SF-64:
+    1: 1
+    2: 2
+    3: 3
+    4: 4
+    5: 5
+    6: 6
+    7: 7
+    8: 8
+    9: 9
+    10: 0
+    11: F1
+    12: F2
+    13: F3
+    14: F4
+    15: F5
+    16: F6
+    17: F7
+    18: F8
+    19: F9
+    20: m
+    21: b
+    joy_up: w
+    joy_down: s
+    joy_left: q
+    joy_right: e
+    joy_button: space
+    scroll_up: o
+    scroll_down: p
+    scroll_middle: k
+    wasd_mode: true
+    joy_x_y_rotation: 0.7

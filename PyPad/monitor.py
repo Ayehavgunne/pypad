@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import psutil
+import termios
 import yaml
 from dotenv import find_dotenv, load_dotenv
 from serial import Serial
@@ -14,26 +15,40 @@ from serial.tools.list_ports import comports
 from serial.tools.list_ports_common import ListPortInfo
 
 load_dotenv(find_dotenv(filename="../.myenv"))
-from PyPad.config_man.config_man import start_server  # isort:skip
+# from PyPad.config_man.config_man import start_server  # isort:skip
 
 FILE_DIR = Path(__file__).parent
 
 CHECK_APP_SECONDS = 5
 BAUD_RATE = 115200
 MY_DEVICE_ID = os.getenv("DEVICE_ID")
+last_modified = 0
+
+
+def detect_file_changes(file_path: Path) -> float:
+    return file_path.lstat().st_mtime
 
 
 def is_running(process: psutil.Process) -> bool:
     if not process:
         return False
     try:
-        return process.status() == psutil.STATUS_RUNNING
+        return process.status() in (
+            psutil.STATUS_RUNNING,
+            psutil.STATUS_SLEEPING,
+            psutil.STATUS_DISK_SLEEP,
+            psutil.STATUS_WAKING,
+            psutil.STATUS_PARKED,
+            psutil.STATUS_LOCKED,
+            psutil.STATUS_IDLE,
+            psutil.STATUS_WAITING,
+        )
     except psutil.NoSuchProcess:
         return False
 
 
 def get_proc_exe_name(process: psutil.Process) -> str:
-    return process.exe().replace("\\", "/").split("/")[-1].split(".")[0]
+    return process.name().split(".")[0]
 
 
 def find_app(mappings: dict) -> Optional[psutil.Process]:
@@ -61,7 +76,8 @@ def find_serial() -> Optional[Serial]:
         serial = Serial(port.device, BAUD_RATE, timeout=1, write_timeout=0.005)
         print("Connected")
         return serial
-    except SerialException:
+    except SerialException as err:
+        print(err)
         return None
 
 
@@ -82,20 +98,33 @@ def read_serial(serial: Serial) -> Optional[str]:
         return None
 
 
-def send_serial(serial: Serial, message: Any) -> None:
+def send_serial(serial: Serial, message: Any) -> bool:
     try:
         serial.reset_output_buffer()
         serial.write(f"{str(message)}\n".encode("utf-8"))
-    except (AttributeError, SerialException) as err:
+        print(" Done")
+        return True
+    except (AttributeError, SerialException, termios.error) as err:
+        print(" Error:", end = " ")
         print(err)
+        return False
+
+
+def get_key_map(keymap: dict) -> str:
+    return json.dumps(
+        {
+            str(key).upper(): str(value).upper() for key, value in keymap.items()
+        }
+    )
 
 
 async def main() -> None:
-    loop = asyncio.get_event_loop()
-    loop.create_task(start_server())
+    # loop = asyncio.get_event_loop()
+    # loop.create_task(start_server())
 
-    with (FILE_DIR / "mappings.yaml").open() as map_file:
-        mappings = yaml.load(map_file, Loader=yaml.FullLoader)
+    map_file = FILE_DIR / "mappings.yaml"
+    mappings = yaml.load(map_file.open(), Loader=yaml.FullLoader)
+    last_modified = detect_file_changes(map_file)
 
     serial = find_serial()
     warn_disconnected = False
@@ -105,12 +134,14 @@ async def main() -> None:
     current_app = find_app(mappings)
     start = get_time()
     current_app_name = ""
+    map_sent = False
 
     while True:
         if warn_disconnected:
             print("Disconnected")
             warn_disconnected = False
             running = False
+            map_sent = False
 
         if not find_device():
             if connected:
@@ -128,15 +159,14 @@ async def main() -> None:
                 current_app_name = get_proc_exe_name(current_app)
                 print(f"Found app {current_app_name}")
             last_check = False
+            if not running:
+                map_sent = False
             continue
 
-        if last_check != running and running:
-            keymap = mappings[current_app_name]
-            keymap = {
-                str(key).upper(): str(value).upper() for key, value in keymap.items()
-            }
-            print("Sending map")
-            send_serial(serial, json.dumps(keymap))
+        if last_check != running and running and not map_sent:
+            keymap = get_key_map(mappings[current_app_name])
+            print("Sending map...", end="")
+            map_sent = send_serial(serial, keymap)
             last_check = running
 
         now = get_time()
@@ -144,14 +174,20 @@ async def main() -> None:
             start = now
             last_check = running
             running = is_running(current_app)
-            with open("mappings.yaml") as map_file:
-                new_mappings = yaml.load(map_file, Loader=yaml.FullLoader)
-                if new_mappings != mappings:
-                    mappings = new_mappings
-                    last_check = not running
             if not running:
-                send_serial(serial, "\n")
                 print(f"{current_app_name} closed")
+                print("Clearing map...", end="")
+                keymap = "\n"
+                map_sent = False
+            if running and not map_sent:
+                print("Sending map...", end="")
+            if running and last_modified != detect_file_changes(map_file):
+                last_modified = detect_file_changes(map_file)
+                mappings = yaml.load(map_file.open(), Loader=yaml.FullLoader)
+                keymap = get_key_map(mappings[current_app_name])
+                print("Map changed. Sending map...", end="")
+            if not map_sent:
+                map_sent = send_serial(serial, keymap)
 
         await asyncio.sleep(5)
 
