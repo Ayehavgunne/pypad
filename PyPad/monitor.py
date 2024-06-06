@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import time
 from pathlib import Path
@@ -16,6 +17,15 @@ from serial.tools.list_ports_common import ListPortInfo
 
 load_dotenv(find_dotenv(filename="../.myenv"))
 # from PyPad.config_man.config_man import start_server  # isort:skip
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    filename="/var/log/pypad.log",
+    format="%(asctime)s %(levelname)s: %(message)s",
+    encoding="utf-8",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 FILE_DIR = Path(__file__).parent
 
@@ -74,10 +84,10 @@ def find_serial() -> Optional[Serial]:
         if not port:
             return None
         serial = Serial(port.device, BAUD_RATE, timeout=1, write_timeout=0.005)
-        print("Connected")
+        logger.info("Connected")
         return serial
     except SerialException as err:
-        print(err)
+        logger.error(err)
         return None
 
 
@@ -102,11 +112,10 @@ def send_serial(serial: Serial, message: Any) -> bool:
     try:
         serial.reset_output_buffer()
         serial.write(f"{str(message)}\n".encode("utf-8"))
-        print(" Done")
+        logger.info("Done")
         return True
     except (AttributeError, SerialException, termios.error) as err:
-        print(" Error:", end = " ")
-        print(err)
+        logger.error(err)
         return False
 
 
@@ -138,7 +147,7 @@ async def main() -> None:
 
     while True:
         if warn_disconnected:
-            print("Disconnected")
+            logger.info("Disconnected")
             warn_disconnected = False
             running = False
             map_sent = False
@@ -157,7 +166,7 @@ async def main() -> None:
             running = is_running(current_app)
             if is_running and current_app:
                 current_app_name = get_proc_exe_name(current_app)
-                print(f"Found app {current_app_name}")
+                logger.info(f"Found app {current_app_name}")
             last_check = False
             if not running:
                 map_sent = False
@@ -165,7 +174,7 @@ async def main() -> None:
 
         if last_check != running and running and not map_sent:
             keymap = get_key_map(mappings[current_app_name])
-            print("Sending map...", end="")
+            logger.info("Sending map...")
             map_sent = send_serial(serial, keymap)
             last_check = running
 
@@ -175,17 +184,17 @@ async def main() -> None:
             last_check = running
             running = is_running(current_app)
             if not running:
-                print(f"{current_app_name} closed")
-                print("Clearing map...", end="")
+                logger.info(f"{current_app_name} closed")
+                logger.info("Clearing map...")
                 keymap = "\n"
                 map_sent = False
             if running and not map_sent:
-                print("Sending map...", end="")
+                logger.info("Sending map...")
             if running and last_modified != detect_file_changes(map_file):
                 last_modified = detect_file_changes(map_file)
                 mappings = yaml.load(map_file.open(), Loader=yaml.FullLoader)
                 keymap = get_key_map(mappings[current_app_name])
-                print("Map changed. Sending map...", end="")
+                logger.info("Map changed. Sending map...")
             if not map_sent:
                 map_sent = send_serial(serial, keymap)
 
@@ -193,5 +202,8 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    print("Starting up")
-    asyncio.run(main())
+    try:
+        logger.info("Starting up")
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Shutting down")
