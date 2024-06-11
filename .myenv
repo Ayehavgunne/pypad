@@ -1,2 +1,5 @@
-TONBERRY_CONFIG=C:/Users/posta/code/pypad/config.json
+TONBERRY_CONFIG=/home/ant/code/pypad/config.json
 DEVICE_ID=VID:PID=16C0:0487
+START_SERVER=false
+CHECK_APP_SECONDS=5
+BAUD_RATE=115200
