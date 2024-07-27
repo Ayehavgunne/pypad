@@ -5,10 +5,11 @@ import os
 import time
 from pathlib import Path
 import signal
-from typing import Optional
+from typing import Optional, Union
 import psutil
 import termios
 import yaml
+import subprocess
 from dotenv import find_dotenv, load_dotenv
 from serial import Serial
 from serial.serialutil import SerialException
@@ -114,6 +115,16 @@ def send_serial(serial: Serial, message: str) -> bool:
         return False
 
 
+def change_logiops_cfg_file(file_name: str | None = None) -> None:
+    file_handle = Path("~").expanduser() / ".env_logid"
+    with file_handle.open("w") as file:
+        if file_name:
+            file.write(f"CFG_PATH=/home/ant/code/pypad/src/logiops_cfgs/{file_name}.cfg\n")
+        else:
+            file.write(f"CFG_PATH=/etc/logid.cfg\n")
+    subprocess.run(["systemctl", "--user", "restart", "logid"])
+
+
 @dataclass
 class EventData:
     pass
@@ -126,6 +137,7 @@ class ConnectedEventData(EventData):
 
 @dataclass
 class RunningEventData(EventData):
+    app_name: str
     app_map: dict
     serial: Serial
 
@@ -155,11 +167,13 @@ class AppState(State):
 
 class Running(AppState):
     def __init__(self, event_data: RunningEventData) -> None:
+        self.app_name = event_data.app_name
         self.app_map = event_data.app_map
         self.serial = event_data.serial
         self.map_sent = False
+        self.logid_sent = False
 
-    def on_event(self, event: Event) -> Optional["NotRunning"]:
+    def on_event(self, event: Event) -> Optional[Union["NotRunning", "Running", "MapFileChanged"]]:
         if event.name == "not_running":
             return NotRunning(event.data)
         if event.name == "map_file_changed":
@@ -170,27 +184,14 @@ class Running(AppState):
             logger.info("Sending keymap to device...")
             keymap = get_key_map(self.app_map)
             self.map_sent = send_serial(self.serial, keymap)
+        if not self.logid_sent and (FILE_DIR / "logiops_cfgs" / f"{self.app_name}.cfg").exists:
+            logger.info("Reloading logid with game specific config")
+            change_logiops_cfg_file(self.app_name)
+            self.logid_sent = True
 
 
-class MapFileChanged(AppState):
-    def __init__(self, event_data: RunningEventData) -> None:
-        self.app_map = event_data.app_map
-        self.serial = event_data.serial
-        self.map_sent = False
-
-    def on_event(self, event: Event) -> Optional["NotRunning"]:
-        if event.name == "not_running":
-            return NotRunning(event.data)
-        if event.name == "running":
-            return Running(event.data)
-        if event.name == "map_file_changed":
-            return MapFileChanged(event.data)
-
-    def run(self) -> None:
-        if not self.map_sent:
-            logger.info("Sending keymap to device...")
-            keymap = get_key_map(self.app_map)
-            self.map_sent = send_serial(self.serial, keymap)
+class MapFileChanged(Running):
+    pass
 
 
 class NotRunning(AppState):
@@ -206,6 +207,7 @@ class NotRunning(AppState):
         if not self.map_sent:
             logger.info("No app running. Clearing keymap from device...")
             self.map_sent = send_serial(self.serial, "\n")
+            change_logiops_cfg_file()
 
 
 class DeviceState(State):
@@ -233,15 +235,13 @@ class Connected(DeviceState):
         current_app = find_app_proc(self.mappings)
         running = is_running(current_app)
 
-        if running and not (
-            isinstance(self.state, Running) or isinstance(self.state, MapFileChanged)
-        ):
+        if running and not isinstance(self.state, Running):
             self.current_app_name = get_proc_exe_name(current_app)
             logger.info(f"Found app {self.current_app_name}")
             self.on_connected_event(
                 Event(
                     "running",
-                    RunningEventData(self.mappings[self.current_app_name], self.serial),
+                    RunningEventData(self.current_app_name, self.mappings[self.current_app_name], self.serial),
                 )
             )
         elif running and self.last_modified != detect_file_changes(self.map_file):
@@ -252,7 +252,7 @@ class Connected(DeviceState):
                 self.on_connected_event(
                     Event(
                         "map_file_changed",
-                        RunningEventData(self.mappings[self.current_app_name], self.serial),
+                        RunningEventData(self.current_app_name, self.mappings[self.current_app_name], self.serial),
                     )
                 )
             else:
