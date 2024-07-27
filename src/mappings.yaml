@@ -190,7 +190,7 @@ Wow-SF-64:
     wasd_mode: true
     joy_x_y_rotation: 0.7
 
-WoW:
+WorldofWarcraft:
     1: 1
     2: 2
     3: 3

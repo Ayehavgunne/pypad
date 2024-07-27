@@ -9,7 +9,8 @@ from typing import Optional, Union
 import psutil
 import termios
 import yaml
-import subprocess
+
+# import subprocess
 from dotenv import find_dotenv, load_dotenv
 from serial import Serial
 from serial.serialutil import SerialException
@@ -27,7 +28,7 @@ log_formatter = logging.Formatter(
 )
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_formatter)
-file_handler = logging.FileHandler("/var/log/pypad.log")
+file_handler = logging.FileHandler("./pypad.log")
 file_handler.setFormatter(log_formatter)
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
@@ -76,7 +77,7 @@ def is_running(process: psutil.Process) -> bool:
 
 
 def get_proc_exe_name(process: psutil.Process) -> str:
-    return process.name().split(".")[0]
+    return process.name().split(".")[0].replace(" ", "")
 
 
 def find_app_proc(mappings: dict) -> psutil.Process | None:
@@ -95,9 +96,9 @@ def get_mapping_file_contents(map_file: Path) -> dict:
 
 
 def get_key_map(keymap: dict) -> str:
-    return json.dumps(
-        {str(key).upper(): str(value).upper() for key, value in keymap.items()}
-    )
+    return json.dumps({
+        str(key).upper(): str(value).upper() for key, value in keymap.items()
+    })
 
 
 def detect_file_changes(file_path: Path) -> float:
@@ -115,14 +116,14 @@ def send_serial(serial: Serial, message: str) -> bool:
         return False
 
 
-def change_logiops_cfg_file(file_name: str | None = None) -> None:
-    file_handle = Path("~").expanduser() / ".env_logid"
-    with file_handle.open("w") as file:
-        if file_name:
-            file.write(f"CFG_PATH=/home/ant/code/pypad/src/logiops_cfgs/{file_name}.cfg\n")
-        else:
-            file.write(f"CFG_PATH=/etc/logid.cfg\n")
-    subprocess.run(["systemctl", "--user", "restart", "logid"])
+# def change_logiops_cfg_file(file_name: str | None = None) -> None:
+#     file_handle = Path("~").expanduser() / ".env_logid"
+#     with file_handle.open("w") as file:
+#         if file_name:
+#             file.write(f"CFG_PATH=/home/ant/code/pypad/src/logiops_cfgs/{file_name}.cfg\n")
+#         else:
+#             file.write(f"CFG_PATH=/etc/logid.cfg\n")
+#     subprocess.run(["systemctl", "--user", "restart", "logid"])
 
 
 @dataclass
@@ -173,7 +174,9 @@ class Running(AppState):
         self.map_sent = False
         self.logid_sent = False
 
-    def on_event(self, event: Event) -> Optional[Union["NotRunning", "Running", "MapFileChanged"]]:
+    def on_event(
+        self, event: Event
+    ) -> Optional[Union["NotRunning", "Running", "MapFileChanged"]]:
         if event.name == "not_running":
             return NotRunning(event.data)
         if event.name == "map_file_changed":
@@ -184,9 +187,12 @@ class Running(AppState):
             logger.info("Sending keymap to device...")
             keymap = get_key_map(self.app_map)
             self.map_sent = send_serial(self.serial, keymap)
-        if not self.logid_sent and (FILE_DIR / "logiops_cfgs" / f"{self.app_name}.cfg").exists:
+        if (
+            not self.logid_sent
+            and (FILE_DIR / "logiops_cfgs" / f"{self.app_name}.cfg").exists
+        ):
             logger.info("Reloading logid with game specific config")
-            change_logiops_cfg_file(self.app_name)
+            # change_logiops_cfg_file(self.app_name)
             self.logid_sent = True
 
 
@@ -207,7 +213,7 @@ class NotRunning(AppState):
         if not self.map_sent:
             logger.info("No app running. Clearing keymap from device...")
             self.map_sent = send_serial(self.serial, "\n")
-            change_logiops_cfg_file()
+            # change_logiops_cfg_file()
 
 
 class DeviceState(State):
@@ -241,7 +247,11 @@ class Connected(DeviceState):
             self.on_connected_event(
                 Event(
                     "running",
-                    RunningEventData(self.current_app_name, self.mappings[self.current_app_name], self.serial),
+                    RunningEventData(
+                        self.current_app_name,
+                        self.mappings[self.current_app_name],
+                        self.serial,
+                    ),
                 )
             )
         elif running and self.last_modified != detect_file_changes(self.map_file):
@@ -252,7 +262,11 @@ class Connected(DeviceState):
                 self.on_connected_event(
                     Event(
                         "map_file_changed",
-                        RunningEventData(self.current_app_name, self.mappings[self.current_app_name], self.serial),
+                        RunningEventData(
+                            self.current_app_name,
+                            self.mappings[self.current_app_name],
+                            self.serial,
+                        ),
                     )
                 )
             else:

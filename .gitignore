@@ -10,3 +10,4 @@ dist/
 __pycache__/
 *.code-workspace
 .ruff_cache
+/pypad.log
