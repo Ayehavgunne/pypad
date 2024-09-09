@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import json
 import logging
+import getpass
 import os
 import time
 from pathlib import Path
@@ -17,9 +18,6 @@ from serial.tools.list_ports import comports
 from serial.tools.list_ports_common import ListPortInfo
 
 load_dotenv(find_dotenv(filename="../.myenv"))
-# START_SERVER = os.getenv("START_SERVER", "False").lower() in ("true", "1", "t")
-# if START_SERVER:
-#     from config_man.config_man import start_server
 
 logger = logging.getLogger(__name__)
 log_formatter = logging.Formatter(
@@ -27,7 +25,7 @@ log_formatter = logging.Formatter(
 )
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_formatter)
-file_handler = logging.FileHandler("/var/log/pypad.log")
+file_handler = logging.FileHandler("./pypad.log")
 file_handler.setFormatter(log_formatter)
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
@@ -116,12 +114,13 @@ def send_serial(serial: Serial, message: str) -> bool:
 
 
 def change_logiops_cfg_file(file_name: str | None = None) -> None:
-    file_handle = Path("~").expanduser() / ".env_logid"
-    with file_handle.open("w") as file:
-        if file_name:
-            file.write(f"CFG_PATH=/home/ant/code/pypad/src/logiops_cfgs/{file_name}.cfg\n")
-        else:
-            file.write(f"CFG_PATH=/etc/logid.cfg\n")
+    user = getpass.getuser()
+    link_path = f"/home/{user}/logid.cfg"
+    subprocess.run(["rm", link_path])
+    if file_name:
+        subprocess.run(["ln", "-s", f"/home/{user}/code/pypad/src/logiops_cfgs/{file_name}.cfg", link_path])
+    else:
+        subprocess.run(["ln", "-s", f"/home/{user}/logid-default.cfg", link_path])
     subprocess.run(["systemctl", "--user", "restart", "logid"])
 
 
@@ -296,9 +295,6 @@ class Device:
 
     def run(self) -> None:
         logger.info("Starting up")
-
-        # if START_SERVER:
-        #     asyncio.create_task(start_server())
 
         while not self.stop:
             if not find_device(self.device_id):

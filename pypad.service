@@ -3,7 +3,7 @@ Description=PyPad Application
 
 [Service]
 WorkingDirectory=/home/ant/code/pypad/
-ExecStart=/home/ant/code/pypad/.env/bin/python /home/ant/code/pypad/src/monitor.py
+ExecStart=/home/ant/code/pypad/.venv/bin/python /home/ant/code/pypad/src/monitor.py
 
 [Install]
 WantedBy=default.target

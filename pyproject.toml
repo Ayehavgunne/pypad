@@ -1,23 +1,20 @@
 [project]
 name = "pypad"
 version = "0.1.0"
-description = "Default template for PDM package"
+description = "Python/Arduino based keypad with analog joystick for games/macros"
 authors = [
     {name = "Anthony Post", email = "post.anthony@icloud.com"},
 ]
 dependencies = [
-    "black",
     "python-dotenv",
     "ruff",
     "pyserial",
     "psutil",
     "pyyaml",
-    "tonberry",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"
 license = {text = "MIT"}
-
 
 [tool.pdm]
 distribution = false
